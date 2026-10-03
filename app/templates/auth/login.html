@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Sign In - Student Finance App{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex p-3 mb-2">
+                        <i class="bi bi-wallet2 fs-2"></i>
+                    </div>
+                    <h3 class="fw-bold">Welcome Back</h3>
+                    <p class="text-muted small">Sign in to track your student budget & expenses</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Student Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
+                            <input type="email" id="emailInput" name="email" class="form-control" placeholder="name@university.edu" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                            <input type="password" id="passwordInput" name="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm mb-3">
+                        Sign In
+                    </button>
+
+                    <!-- Demo One-Click Fill -->
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100 rounded-3 mb-3" onclick="fillDemoCredentials()">
+                        <i class="bi bi-magic me-1"></i> Quick Fill Demo Account
+                    </button>
+                </form>
+
+                <div class="text-center small text-muted">
+                    Don't have an account? 
+                    <a href="{{ url_for('auth.register') }}" class="text-primary text-decoration-none fw-semibold">Register here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillDemoCredentials() {
+    document.getElementById('emailInput').value = 'demo@student.edu';
+    document.getElementById('passwordInput').value = 'password123';
+}
+</script>
+{% endblock %}
