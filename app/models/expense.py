@@ -20,6 +20,7 @@ class Expense(db.Model):
             "user_id": self.user_id,
             "category_id": self.category_id,
             "category_name": self.category.name if self.category else "Uncategorized",
+            "category_type": self.category.type if self.category else "expense",
             "category_color": self.category.color if self.category else "#64748b",
             "category_icon": self.category.icon if self.category else "bi-tag",
             "amount": float(self.amount),

@@ -21,12 +21,14 @@ def create_app(config_name=None):
     from app.routes.expenses import expenses_bp
     from app.routes.budgets import budgets_bp
     from app.routes.importer import importer_bp
+    from app.routes.analytics import analytics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(budgets_bp)
     app.register_blueprint(importer_bp)
+    app.register_blueprint(analytics_bp)
 
     # Database bootstrap (tables, default categories, and demo user for prototype)
     with app.app_context():

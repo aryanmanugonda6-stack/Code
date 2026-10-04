@@ -1,9 +1,10 @@
 let categoryChartInstance = null;
+let trendsChartInstance = null;
 let parsedCsvTransactions = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     const monthSelector = document.getElementById("monthSelector");
-    
+
     // Initial Load
     refreshDashboard();
 
@@ -12,8 +13,20 @@ document.addEventListener("DOMContentLoaded", () => {
         refreshDashboard();
     });
 
-    // Form 1: Add Expense
+    // Refresh AI Insights Button
+    document.getElementById("btnRefreshInsights").addEventListener("click", () => {
+        const [year, month] = getSelectedYearMonth();
+        const icon = document.querySelector("#btnRefreshInsights i");
+        icon.classList.add("spin-animation");
+        loadAiInsights(year, month).finally(() => {
+            setTimeout(() => icon.classList.remove("spin-animation"), 600);
+        });
+    });
+
+    // Form 1: Add Expense with Animation
     const addExpenseForm = document.getElementById("addExpenseForm");
+    const btnSubmitExpense = document.getElementById("btnSubmitExpense");
+
     addExpenseForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const payload = {
@@ -23,6 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
             description: document.getElementById("expDesc").value,
         };
 
+        btnSubmitExpense.disabled = true;
+        btnSubmitExpense.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
         try {
             const res = await fetch("/api/expenses", {
                 method: "POST",
@@ -30,18 +46,70 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify(payload)
             });
 
+            btnSubmitExpense.disabled = false;
+            btnSubmitExpense.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Expense';
+
             if (res.ok) {
                 bootstrap.Modal.getInstance(document.getElementById("addExpenseModal")).hide();
                 addExpenseForm.reset();
+                
+                // Visual feedback: Flash KPI card
+                flashCard("cardTotalSpent");
                 refreshDashboard();
             } else {
                 const err = await res.json();
                 alert("Error saving expense: " + (err.error || "Unknown"));
             }
         } catch (e) {
+            btnSubmitExpense.disabled = false;
+            btnSubmitExpense.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Expense';
             alert("Network error: " + e.message);
         }
     });
+
+    // Form 1B: Add Income with Animation
+    const addIncomeForm = document.getElementById("addIncomeForm");
+    const btnSubmitIncome = document.getElementById("btnSubmitIncome");
+
+    if (addIncomeForm) {
+        addIncomeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                amount: parseFloat(document.getElementById("incAmount").value),
+                category_id: parseInt(document.getElementById("incCategory").value),
+                expense_date: document.getElementById("incDate").value,
+                description: document.getElementById("incDesc").value,
+            };
+
+            btnSubmitIncome.disabled = true;
+            btnSubmitIncome.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+            try {
+                const res = await fetch("/api/expenses", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                btnSubmitIncome.disabled = false;
+                btnSubmitIncome.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Income';
+
+                if (res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById("addIncomeModal")).hide();
+                    addIncomeForm.reset();
+                    flashCard("cardTotalSpent");
+                    refreshDashboard();
+                } else {
+                    const err = await res.json();
+                    alert("Error saving income: " + (err.error || "Unknown"));
+                }
+            } catch (e) {
+                btnSubmitIncome.disabled = false;
+                btnSubmitIncome.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Income';
+                alert("Network error: " + e.message);
+            }
+        });
+    }
 
     // Form 2: Set Budget
     const budgetForm = document.getElementById("budgetForm");
@@ -63,6 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (res.ok) {
                 bootstrap.Modal.getInstance(document.getElementById("budgetModal")).hide();
+                flashCard("cardBudget");
                 refreshDashboard();
             } else {
                 const err = await res.json();
@@ -73,9 +142,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // CSV Ingestion: File selection & Parse button
+    // CSV Ingestion: Drag & Drop Animations
+    const dropzone = document.getElementById("csvUploadSection");
     const csvFileInput = document.getElementById("csvFileInput");
     const btnParseCsv = document.getElementById("btnParseCsv");
+
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropzone.classList.add("drag-over");
+        }, false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("drag-over");
+        }, false);
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length && files[0].name.toLowerCase().endsWith(".csv")) {
+            csvFileInput.files = files;
+            btnParseCsv.disabled = false;
+            btnParseCsv.classList.add("pulse-animation");
+        } else {
+            alert("Please drop a valid .csv file.");
+        }
+    });
+
     csvFileInput.addEventListener("change", () => {
         btnParseCsv.disabled = !csvFileInput.files.length;
     });
@@ -86,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("file", csvFileInput.files[0]);
 
         btnParseCsv.disabled = true;
-        btnParseCsv.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Parsing...';
+        btnParseCsv.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Parsing with AI...';
 
         try {
             const res = await fetch("/api/import/csv/preview", {
@@ -113,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // CSV Ingestion: Confirm & Save
     const btnConfirmImport = document.getElementById("btnConfirmImport");
     btnConfirmImport.addEventListener("click", async () => {
-        // Collect state from preview table
         const toImport = [];
         const rows = document.querySelectorAll("#previewTableBody tr");
 
@@ -149,13 +245,14 @@ document.addEventListener("DOMContentLoaded", () => {
             btnConfirmImport.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Confirm & Save Transactions';
 
             if (res.ok) {
-                alert(`Successfully imported ${result.imported_count} transactions!`);
                 bootstrap.Modal.getInstance(document.getElementById("csvImportModal")).hide();
-                // Reset CSV modal
                 document.getElementById("csvPreviewSection").classList.add("d-none");
                 btnConfirmImport.classList.add("d-none");
                 csvFileInput.value = "";
                 btnParseCsv.disabled = true;
+                
+                flashCard("cardTotalSpent");
+                flashCard("cardBudget");
                 refreshDashboard();
             } else {
                 alert("Error importing: " + (result.error || "Unknown"));
@@ -169,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function getSelectedYearMonth() {
-    const val = document.getElementById("monthSelector").value; // 'YYYY-MM'
+    const val = document.getElementById("monthSelector").value;
     const parts = val.split("-");
     return [parseInt(parts[0]), parseInt(parts[1])];
 }
@@ -178,8 +275,19 @@ async function refreshDashboard() {
     const [year, month] = getSelectedYearMonth();
     await Promise.all([
         loadSummary(year, month),
-        loadTransactions(year, month)
+        loadTransactions(year, month),
+        loadTrends(),
+        loadAiInsights(year, month)
     ]);
+}
+
+function flashCard(cardId) {
+    const el = document.getElementById(cardId);
+    if (el) {
+        el.classList.remove("flash-updated");
+        void el.offsetWidth; // trigger reflow
+        el.classList.add("flash-updated");
+    }
 }
 
 async function loadSummary(year, month) {
@@ -188,7 +296,7 @@ async function loadSummary(year, month) {
         if (!res.ok) return;
         const data = await res.json();
 
-        // 1. Update KPI Text
+        // 1. KPI Numbers
         document.getElementById("totalSpentText").innerText = `$${data.total_spent.toFixed(2)}`;
         document.getElementById("totalIncomeText").innerText = `$${data.total_income.toFixed(2)}`;
         document.getElementById("budgetRemainingText").innerText = `$${data.remaining_budget.toFixed(2)}`;
@@ -232,16 +340,78 @@ async function loadSummary(year, month) {
             alertBanner.classList.add("d-none");
         }
 
-        // 4. Prepopulate budget modal input with existing limit
+        // 4. Prepopulate budget modal
         if (data.budget_limit > 0) {
             document.getElementById("budgetAmountInput").value = data.budget_limit;
         }
 
-        // 5. Update Chart.js Doughnut
-        renderChart(data.categories);
+        // 5. Update Category Doughnut
+        renderCategoryChart(data.categories);
 
     } catch (e) {
         console.error("Failed to load summary:", e);
+    }
+}
+
+async function loadTrends() {
+    try {
+        const res = await fetch("/api/analytics/trends?months=6");
+        if (!res.ok) return;
+        const trends = await res.json();
+        renderTrendsChart(trends);
+    } catch (e) {
+        console.error("Failed to load trends:", e);
+    }
+}
+
+async function loadAiInsights(year, month) {
+    try {
+        const res = await fetch(`/api/analytics/insights?year=${year}&month=${month}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 1. Health Score Badge
+        const healthBadge = document.getElementById("aiHealthScoreBadge");
+        healthBadge.innerHTML = `<i class="bi bi-shield-check me-1"></i> Health Score: ${data.health_score}/100 (${data.health_label})`;
+        if (data.health_score >= 80) {
+            healthBadge.className = "badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-2 fw-semibold ai-pulse-badge";
+        } else if (data.health_score >= 65) {
+            healthBadge.className = "badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3 py-2 fw-semibold";
+        } else {
+            healthBadge.className = "badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-2 fw-semibold";
+        }
+
+        // 2. Render Insights Cards
+        const container = document.getElementById("aiInsightsContainer");
+        container.innerHTML = "";
+
+        if (!data.insights || data.insights.length === 0) {
+            container.innerHTML = `<div class="col-12 text-muted small text-center py-2">No insights yet. Log more transactions to get recommendations!</div>`;
+            return;
+        }
+
+        data.insights.forEach(item => {
+            const col = document.createElement("div");
+            col.className = "col-md-6 animated-row";
+            col.innerHTML = `
+                <div class="p-3 rounded-4 bg-white border h-100 insight-item shadow-sm">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge rounded-pill px-2" style="background-color: ${item.color}20; color: ${item.color};">
+                            <i class="bi ${item.icon} me-1"></i> ${escapeHtml(item.badge)}
+                        </span>
+                    </div>
+                    <h6 class="fw-bold mb-1">${escapeHtml(item.title)}</h6>
+                    <p class="text-muted small mb-2">${escapeHtml(item.detail)}</p>
+                    <div class="small fw-semibold text-primary">
+                        <i class="bi bi-lightbulb me-1"></i> ${escapeHtml(item.action)}
+                    </div>
+                </div>
+            `;
+            container.appendChild(col);
+        });
+
+    } catch (e) {
+        console.error("Failed to load AI insights:", e);
     }
 }
 
@@ -260,19 +430,24 @@ async function loadTransactions(year, month) {
             return;
         }
 
-        expenses.forEach(e => {
+        expenses.forEach((e, idx) => {
             const tr = document.createElement("tr");
+            tr.className = "animated-row";
+            tr.style.animationDelay = `${idx * 0.04}s`;
+            const isIncome = e.category_type === "income";
             tr.innerHTML = `
                 <td class="small text-muted">${e.expense_date}</td>
                 <td>
-                    <div class="fw-semibold">${escapeHtml(e.description || "Expense")}</div>
+                    <div class="fw-semibold">${escapeHtml(e.description || (isIncome ? "Income" : "Expense"))}</div>
                 </td>
                 <td>
                     <span class="badge rounded-pill px-2" style="background-color: ${e.category_color}; color: #fff;">
                         <i class="bi ${e.category_icon} me-1"></i> ${escapeHtml(e.category_name)}
                     </span>
                 </td>
-                <td class="text-end fw-bold text-dark">$${e.amount.toFixed(2)}</td>
+                <td class="text-end fw-bold ${isIncome ? 'text-success' : 'text-dark'}">
+                    ${isIncome ? '+' : ''}$${e.amount.toFixed(2)}
+                </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-link text-danger p-0 opacity-75" title="Delete" onclick="deleteTransaction(${e.id})">
                         <i class="bi bi-trash3"></i>
@@ -301,7 +476,7 @@ async function deleteTransaction(id) {
     }
 }
 
-function renderChart(categories) {
+function renderCategoryChart(categories) {
     const ctx = document.getElementById("categoryChart").getContext("2d");
     const noDataDiv = document.getElementById("noDataChart");
 
@@ -340,6 +515,7 @@ function renderChart(categories) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: { duration: 750, easing: "easeOutQuart" },
                 plugins: {
                     legend: {
                         position: "bottom",
@@ -350,6 +526,71 @@ function renderChart(categories) {
                     }
                 },
                 cutout: "65%"
+            }
+        });
+    }
+}
+
+function renderTrendsChart(trends) {
+    const ctx = document.getElementById("trendsChart").getContext("2d");
+    const labels = trends.map(t => t.label);
+    const expenses = trends.map(t => t.expenses);
+    const income = trends.map(t => t.income);
+
+    if (trendsChartInstance) {
+        trendsChartInstance.data.labels = labels;
+        trendsChartInstance.data.datasets[0].data = expenses;
+        trendsChartInstance.data.datasets[1].data = income;
+        trendsChartInstance.update();
+    } else {
+        trendsChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Expenses ($)",
+                        data: expenses,
+                        backgroundColor: "rgba(239, 68, 68, 0.75)",
+                        borderColor: "#ef4444",
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                    },
+                    {
+                        label: "Income ($)",
+                        data: income,
+                        backgroundColor: "rgba(16, 185, 129, 0.75)",
+                        borderColor: "#10b981",
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 850, easing: "easeOutCubic" },
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: {
+                            boxWidth: 14,
+                            font: { family: "'Inter', sans-serif", size: 12 }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return "$" + value; }
+                        },
+                        grid: { color: "#f1f5f9" }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
             }
         });
     }
@@ -374,11 +615,12 @@ function renderCsvPreview(data) {
 
     parsedCsvTransactions.forEach((row, i) => {
         const tr = document.createElement("tr");
+        tr.className = "animated-row";
+        tr.style.animationDelay = `${i * 0.05}s`;
         if (row.is_duplicate) {
-            tr.className = "table-light opacity-75";
+            tr.className += " table-light opacity-75";
         }
 
-        // Category dropdown options
         let catOptions = "";
         ALL_CATEGORIES.forEach(cat => {
             const selected = (cat.id === row.suggested_category_id) ? "selected" : "";
