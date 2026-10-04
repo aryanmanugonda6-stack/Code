@@ -394,7 +394,7 @@ async function loadAiInsights(year, month) {
             const col = document.createElement("div");
             col.className = "col-md-6 animated-row";
             col.innerHTML = `
-                <div class="p-3 rounded-4 bg-white border h-100 insight-item shadow-sm">
+                <div class="p-3 rounded-4 h-100 insight-item shadow-sm">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="badge rounded-pill px-2" style="background-color: ${item.color}20; color: ${item.color};">
                             <i class="bi ${item.icon} me-1"></i> ${escapeHtml(item.badge)}
@@ -509,7 +509,7 @@ function renderCategoryChart(categories) {
                     data: dataValues,
                     backgroundColor: bgColors,
                     borderWidth: 2,
-                    borderColor: "#ffffff"
+                    borderColor: "#131d31"
                 }]
             },
             options: {
@@ -521,6 +521,7 @@ function renderCategoryChart(categories) {
                         position: "bottom",
                         labels: {
                             boxWidth: 12,
+                            color: "#cbd5e1",
                             font: { family: "'Inter', sans-serif", size: 11 }
                         }
                     }
@@ -551,7 +552,7 @@ function renderTrendsChart(trends) {
                     {
                         label: "Expenses ($)",
                         data: expenses,
-                        backgroundColor: "rgba(239, 68, 68, 0.75)",
+                        backgroundColor: "rgba(239, 68, 68, 0.8)",
                         borderColor: "#ef4444",
                         borderWidth: 1.5,
                         borderRadius: 6,
@@ -559,7 +560,7 @@ function renderTrendsChart(trends) {
                     {
                         label: "Income ($)",
                         data: income,
-                        backgroundColor: "rgba(16, 185, 129, 0.75)",
+                        backgroundColor: "rgba(16, 185, 129, 0.8)",
                         borderColor: "#10b981",
                         borderWidth: 1.5,
                         borderRadius: 6,
@@ -575,6 +576,7 @@ function renderTrendsChart(trends) {
                         position: "top",
                         labels: {
                             boxWidth: 14,
+                            color: "#cbd5e1",
                             font: { family: "'Inter', sans-serif", size: 12 }
                         }
                     }
@@ -583,11 +585,13 @@ function renderTrendsChart(trends) {
                     y: {
                         beginAtZero: true,
                         ticks: {
+                            color: "#94a3b8",
                             callback: function(value) { return "$" + value; }
                         },
-                        grid: { color: "#f1f5f9" }
+                        grid: { color: "rgba(255, 255, 255, 0.08)" }
                     },
                     x: {
+                        ticks: { color: "#cbd5e1" },
                         grid: { display: false }
                     }
                 }

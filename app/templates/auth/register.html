@@ -1,55 +1,138 @@
 {% extends "base.html" %}
-{% block title %}Register - Student Finance App{% endblock %}
+{% block title %}Create Account - Student Finance{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5 col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <div class="text-center mb-4">
-                    <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex p-3 mb-2">
-                        <i class="bi bi-person-plus fs-2"></i>
+<div class="auth-wrapper py-5">
+    <div class="auth-hero-glow"></div>
+    <div class="container position-relative" style="z-index: 1;">
+        <div class="row align-items-center g-5">
+            
+            <!-- Left Side: Hero Value Proposition -->
+            <div class="col-lg-6 d-none d-lg-block pe-lg-5">
+                <!-- Brand Badge -->
+                <div class="d-flex align-items-center gap-3 mb-5">
+                    <div class="auth-logo-badge">
+                        <span>₹</span>
                     </div>
-                    <h3 class="fw-bold">Create Account</h3>
-                    <p class="text-muted small">Start managing your student money today</p>
+                    <span class="fs-4 fw-bold text-white tracking-wide">Student Finance</span>
                 </div>
 
-                <form method="POST" action="{{ url_for('auth.register') }}">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Full Name</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                            <input type="text" name="name" class="form-control" placeholder="Alex Student" required autofocus>
-                        </div>
+                <!-- Big Headline with Gradient -->
+                <h1 class="hero-title text-white mb-3">
+                    Join today.<br>
+                    <span class="hero-gradient-text">Take control.</span>
+                </h1>
+
+                <!-- Subtitle -->
+                <p class="fs-5 mb-5" style="color: #94a3b8; max-width: 460px; line-height: 1.6;">
+                    Set up your student wallet in 30 seconds. Track allowances, campus dining, rent, textbooks, and monthly savings.
+                </p>
+
+                <!-- 3 Feature Cards -->
+                <div class="d-flex flex-wrap gap-3 mt-4">
+                    <div class="auth-feature-pill">
+                        <div class="fw-bold text-white small mb-1">Fast onboarding</div>
+                        <div class="small" style="color: #94a3b8;">Zero bank setup needed</div>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Student Email</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-envelope"></i></span>
-                            <input type="email" name="email" class="form-control" placeholder="name@university.edu" required>
-                        </div>
+                    <div class="auth-feature-pill">
+                        <div class="fw-bold text-white small mb-1">Zero fees</div>
+                        <div class="small" style="color: #94a3b8;">100% free for students</div>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                            <input type="password" name="password" class="form-control" placeholder="At least 6 characters" required>
-                        </div>
+                    <div class="auth-feature-pill">
+                        <div class="fw-bold text-white small mb-1">Encrypted security</div>
+                        <div class="small" style="color: #94a3b8;">Hashed with bcrypt</div>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm mb-3">
-                        Register Account
-                    </button>
-                </form>
-
-                <div class="text-center small text-muted">
-                    Already have an account? 
-                    <a href="{{ url_for('auth.login') }}" class="text-primary text-decoration-none fw-semibold">Sign in</a>
                 </div>
             </div>
+
+            <!-- Right Side: Registration Form -->
+            <div class="col-lg-6 col-md-8 mx-auto">
+                <div class="auth-form-card">
+
+                    <!-- Mobile-Only Brand Header -->
+                    <div class="d-lg-none d-flex align-items-center gap-3 mb-4">
+                        <div class="auth-logo-badge">
+                            <span>₹</span>
+                        </div>
+                        <span class="fs-4 fw-bold text-white">Student Finance</span>
+                    </div>
+
+                    <!-- Header -->
+                    <div class="mb-4">
+                        <div class="auth-eyebrow mb-2">GET STARTED</div>
+                        <h2 class="fw-bold text-white mb-2">Create your account</h2>
+                        <p class="small mb-0" style="color: #94a3b8;">Begin managing your personal finances.</p>
+                    </div>
+
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show border-0 rounded-3 mb-3 small" role="alert" style="background-color: rgba(239, 68, 68, 0.15); color: #fca5a5;">
+                                    <i class="bi bi-exclamation-circle-fill me-2"></i> {{ message }}
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Form -->
+                    <form method="POST" action="{{ url_for('auth.register') }}">
+                        
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label class="form-label small text-light fw-medium mb-1">Full Name</label>
+                            <input type="text" name="name" class="form-control auth-input-dark" placeholder="Alex Student" required autofocus>
+                        </div>
+
+                        <!-- Email Input -->
+                        <div class="mb-3">
+                            <label class="form-label small text-light fw-medium mb-1">Student Email address</label>
+                            <input type="email" name="email" class="form-control auth-input-dark" placeholder="you@university.edu" required>
+                        </div>
+
+                        <!-- Password Input with Toggle -->
+                        <div class="mb-4">
+                            <label class="form-label small text-light fw-medium mb-1">Password</label>
+                            <div class="position-relative">
+                                <input type="password" id="regPasswordInput" name="password" class="form-control auth-input-dark pe-5" placeholder="At least 6 characters" required>
+                                <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y text-secondary border-0 pe-3" id="toggleRegPasswordBtn" style="background: transparent;">
+                                    <i class="bi bi-eye" id="regEyeIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Create Account Button -->
+                        <button type="submit" class="btn auth-btn-signin w-100 mb-3">
+                            Create account
+                        </button>
+                    </form>
+
+                    <!-- Bottom Sign-In Link -->
+                    <div class="text-center mt-3 small" style="color: #94a3b8;">
+                        Already have an account? <a href="{{ url_for('auth.login') }}" class="fw-semibold text-decoration-none" style="color: #818cf8;">Sign in here</a>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+
+<script>
+const toggleRegPasswordBtn = document.getElementById("toggleRegPasswordBtn");
+const regPasswordInput = document.getElementById("regPasswordInput");
+const regEyeIcon = document.getElementById("regEyeIcon");
+
+toggleRegPasswordBtn.addEventListener("click", () => {
+    if (regPasswordInput.type === "password") {
+        regPasswordInput.type = "text";
+        regEyeIcon.className = "bi bi-eye-slash text-light";
+    } else {
+        regPasswordInput.type = "password";
+        regEyeIcon.className = "bi bi-eye text-secondary";
+    }
+});
+</script>
 {% endblock %}
